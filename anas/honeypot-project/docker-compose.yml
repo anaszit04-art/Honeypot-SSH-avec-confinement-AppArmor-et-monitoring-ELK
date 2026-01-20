@@ -1,0 +1,47 @@
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - elk-network
+    restart: unless-stopped
+
+  kibana:
+    container_name: kibana
+    image: kibana:7.17.9
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - elk-network
+    restart: unless-stopped
+
+  logstash:
+    container_name: logstash
+    image: logstash:7.17.9
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /var/log/honeypot:/var/log/honeypot:ro
+    environment:
+      - XPACK_MONITORING_ENABLED=false
+    networks:
+      - elk-network
+    restart: unless-stopped
+
+volumes:
+  es_data:
+    driver: local
+
+networks:
+  elk-network:
+    driver: bridge
